@@ -15,7 +15,7 @@ public struct XIRR
         guess = 12345;                    // Random value to approximate IRR
     }
 
-    public void Accumulate(SqlDateTime dates, SqlDouble amounts, SqlDouble guess)
+    public void Accumulate(SqlDouble amounts, SqlDateTime dates, SqlDouble guess)
     {
         // Check if the date or the amount are null or if amount=0. In any of these cases, ignore this row
         if ((!dates.IsNull) && (!amounts.IsNull) && (!amounts.Equals((SqlDouble)0)))
