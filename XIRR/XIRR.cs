@@ -4,7 +4,7 @@ using System.Collections;
 using System.Data.SqlTypes;
 
 [Serializable]
-[Microsoft.SqlServer.Server.SqlUserDefinedAggregate(Format.Native)]
+[Microsoft.SqlServer.Server.SqlUserDefinedAggregate(Format.UserDefined)]
 public struct XIRR
 {
     public SortedList irrElements;
@@ -40,7 +40,7 @@ public struct XIRR
             this.guess = (Double)guess.Value;
     }
 
-    public void Merge (XIRR Group)
+    public void Merge(XIRR Group)
     {
         // Put the merge code here
         // Merge the IRR approximate
@@ -66,7 +66,7 @@ public struct XIRR
         }
     }
 
-    public SqlDouble Terminate ()
+    public SqlDouble Terminate()
     {
         // Gets the list of keys and the list of values.
         IList days = this.irrElements.GetKeyList();
@@ -161,80 +161,74 @@ public struct XIRR
     {
         public static double calculateIRR(double guess, IList payments, IList days)
         {
-            // This function calculates the Internal Rate of Return (IRR) for the given data.
-            double irr = 0;
-            double tolerance = 0.00001; // Tolerance level for the convergence of the IRR calculation.
-            double rate = guess; 
-            double lastRate; // Variable to store the IRR value from the previous iteration.
-            double error = 100.0; // Initial error set to a high value to start the loop.
-            double maximumError = 1E30; // Added to check if the error diverges beyond this value, indicating failure.
-            double rateStep = 1.0; 
-            double residual = 0.99; 
-            double lastResidual = 1.0;
-            int maxIterations = 100;
+            double rate = guess;
+            double tol = 1e-7; // Tolerance level for convergence
+            int maxIterations = 100; // Maximum number of iterations allowed
+            double npv = 0.0;
+            double npvDerivative = 0.0;
+            double minRate = -0.9999999; // Minimum allowable rate (rate cannot be less than -1)
+            int iteration = 0;
 
-            int i = 0; // Iteration counter.
-            lastRate = rate; // Initialize the previous rate with the initial guess.
-
-            while ((error > tolerance) && (i < maxIterations)) // Loop until the error is within tolerance or max iterations are reached.
+            while (iteration < maxIterations)
             {
-                // Store the result from the previous iteration.
-                lastResidual = residual;
-                lastRate = rate;
+                npv = 0.0;
+                npvDerivative = 0.0;
 
-                // Calculate the net present value of the payments using the current rate.
-                residual = calculateReturn(rate, payments, days);
-
-                // Calculate the absolute difference between the last and current residuals (error).
-                error = Math.Abs((lastResidual - residual));
-
-                // Prepare for the next iteration.
-                if (residual >= 0)
-                    rate += rateStep;
-                else 
+                for (int i = 0; i < payments.Count; i++)
                 {
-                    rateStep /= 2;
-                    rate -= rateStep;
+                    double t = ((Int32)days[i] - (Int32)days[0]) / 365.0;
+                    double ratePlusOne = rate + 1.0;
+
+                    if (ratePlusOne <= 0.0)
+                    {
+                        // Cannot compute with rate + 1 <= 0
+                        return double.NaN;
+                    }
+
+                    double denom = Math.Pow(ratePlusOne, t);
+
+                    if (denom == 0.0)
+                    {
+                        // Avoid division by zero
+                        denom = 1e-10;
+                    }
+
+                    npv += (double)payments[i] / denom;
+                    npvDerivative -= t * (double)payments[i] / (denom * ratePlusOne);
                 }
 
-                i++;
+                if (Math.Abs(npv) < tol)
+                {
+                    // NPV is close enough to zero; convergence achieved
+                    return rate;
+                }
 
-                // If the error diverges and exceeds the maximum error threshold, return NaN (not a number).
-                if (error > maximumError)
+                if (npvDerivative == 0.0)
+                {
+                    // Derivative is zero; cannot proceed
                     return double.NaN;
+                }
+
+                double newRate = rate - npv / npvDerivative;
+
+                if (double.IsNaN(newRate) || double.IsInfinity(newRate))
+                {
+                    // Computation failed; return NaN
+                    return double.NaN;
+                }
+
+                // Ensure the rate stays above the minimum allowable rate
+                if (newRate <= minRate)
+                {
+                    newRate = (rate + minRate) / 2.0;
+                }
+
+                rate = newRate;
+                iteration++;
             }
 
-            irr = lastRate; // Store the last calculated rate as the final IRR.
-
-            // If the calculated IRR is positive or negative infinity, return NaN.
-            if (irr.Equals(Double.PositiveInfinity) || irr.Equals(Double.NegativeInfinity))
-                return double.NaN;
-
-            // If the function has not converged within the allowed iterations, return NaN.
-            if (i == maxIterations)
-                return double.NaN;
-
-            return irr;
-        }
-
-
-        private static double calculateReturn(double rate, IList payments, IList days)
-        {
-            // This function calculates the compounded interest based on the list of dates/payments at a given rate.
-            double returnValue = 0;
-
-            for (int i = 0; i < payments.Count; i++) // Iterate over all payments in the list.
-            {
-                // Check if the calculated power value is zero, which can cause a division error.
-                if (Math.Pow((double)(1.0 + rate), (double)(((Int32)days[i] - (Int32)days[0]) / 365.0)).Equals(0.0))
-                    // If the calculated power is zero, divide the payment by a small number (0.1) to avoid division by zero.
-                    returnValue += (double)payments[i] / 0.1;
-                else
-                    // Otherwise, calculate the present value of the payment using the formula:
-                    // payment / (1 + rate) ^ ((days[i] - days[0]) / 365)
-                    returnValue += (double)payments[i] / Math.Pow((double)(1.0 + rate), (double)(((Int32)days[i] - (Int32)days[0]) / 365.0));
-            }
-            return returnValue;
+            // Maximum iterations exceeded without convergence
+            return double.NaN;
         }
 
     }

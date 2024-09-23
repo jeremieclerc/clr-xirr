@@ -60,7 +60,7 @@ namespace XirrTest
             };
 
             double initialGuess = 0.1; // Initial approximation for IRR
-            double expectedXIRR = 0.0100; // Expected XIRR value calculated externally
+            double expectedXIRR = 0.1004; // Expected XIRR value calculated externally
 
             // Act
             foreach (var cashFlow in cashFlows)
