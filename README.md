@@ -30,14 +30,14 @@ This will create the assembly and the function `XIRR` associated.
 This function is strongly inspired by Excel's XIRR function.
 It accepts 3 parameters:
 
-- Amounts
+- Values
 - Dates
 - Guess
 
 ## Example
 
 ```sql
-SELECT dbo.XIRR(AmountColumn, DateColumn, 0.1)
+SELECT dbo.XIRR(ValuestColumn, DateColumn, 0.1)
 FROM FinancialTable
 ```
 
