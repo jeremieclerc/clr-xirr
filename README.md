@@ -48,7 +48,7 @@ FROM FinancialTable
 The main structure, `XIRR`, contains the following methods:
 
 - **`Init()`**: Initializes the IRR elements and sets the initial guess value.
-- **`Accumulate(SqlDateTime dates, SqlDouble amounts, SqlDouble guess)`**: Accumulates the dates and amounts into a sorted list and sets the initial guess value.
+- **`Accumulate(SqlDouble values, SqlDateTime dates, SqlDouble guess)`**: Accumulates the dates and amounts into a sorted list and sets the initial guess value.
 - **`Merge(XIRR Group)`**: Merges another `XIRR` group into the current instance, combining the IRR elements and updating the guess value.
 - **`Terminate()`**: Calculates the final IRR using the `calculateIRR` method of the `XirrCalculator` class and returns the result as `SqlDouble`.
 
@@ -56,7 +56,7 @@ The main structure, `XIRR`, contains the following methods:
 
 This class contains the logic for calculating the IRR using the Newton-Raphson method.
 
-#### `calculateIRR(double guess, IList payments, IList days)`
+`calculateIRR(IList values, IList days, double guess)`
 
 This method performs the IRR calculation with the following steps:
 
@@ -67,16 +67,6 @@ This method performs the IRR calculation with the following steps:
 
 ```math
    \text{{newRate}} = \text{{rate}} - \frac{{\text{{NPV}}}}{{\text{{NPV'}}}}
-```
-
-### 5. Returns the final rate if convergence is achieved; otherwise, returns `double.NaN`.
-
-#### `calculateReturn(double rate, IList payments, IList days)`
-
-Calculates the compounded interest based on the list of dates/payments at a given rate using the formula:
-
-```math
-\text{{returnValue}} += \frac{{\text{{payment}}}}{{(1 + \text{{rate}})^{\left(\frac{{\text{{days}}[i] - \text{{days}}[0]}}{365}\right)}}}
 ```
 
 ### 3. Serialization Methods
@@ -94,5 +84,5 @@ Feel free to fork this repository and make your own contributions. For major cha
 
 ## Authors
 
-- Arthur Meyniel
-- Jérémie Clerc
+- [Arthur Meyniel](https://github.com/ArthurMynl)
+- [Jérémie Clerc](https://github.com/jeremieclerc)

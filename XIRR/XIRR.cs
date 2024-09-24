@@ -16,10 +16,10 @@ public struct XIRR : IBinarySerialize
         guess = 12345;                    // Random value to approximate IRR
     }
 
-    public void Accumulate(SqlDouble amounts, SqlDateTime dates, SqlDouble guess)
+    public void Accumulate(SqlDouble values, SqlDateTime dates, SqlDouble guess)
     {
-        // Check if the date or the amount are null or if amount=0. In any of these cases, ignore this row
-        if ((!dates.IsNull) && (!amounts.IsNull) && (!amounts.Equals((SqlDouble)0)))
+        // Check if the date or the amount are null or if amount=0. In any of these cases, ignore this row (ALi added SqlDouble on 20110630)
+        if ((!dates.IsNull) && (!values.IsNull) && (!values.Equals((SqlDouble)0)))
         {
             // Get the distance in days between the date and today
             int days = ((DateTime)dates - DateTime.Today).Days;
@@ -27,12 +27,12 @@ public struct XIRR : IBinarySerialize
             // Check if that date is already in the list
             if (irrElements.IndexOfKey(days) == -1)
                 // if it is not, add it
-                irrElements.Add(days, (Double)amounts);
+                irrElements.Add(days, (Double)values);
             else
             {
                 // if it is, then add the amount
                 Double originalAmount = (Double)(irrElements[days]);
-                irrElements[days] = originalAmount + (Double)amounts;
+                irrElements[days] = originalAmount + (Double)values;
             }
         }
 
@@ -71,19 +71,19 @@ public struct XIRR : IBinarySerialize
     {
         // Gets the list of keys and the list of values.
         IList days = this.irrElements.GetKeyList();
-        IList amounts = this.irrElements.GetValueList();
+        IList values = this.irrElements.GetValueList();
 
         bool noPositiveValueExists = true;
         bool noNegativeValueExists = true;
         int i = 0;
 
         // Loop while we have not found a positive and a negative value in all the list
-        while ((i < amounts.Count) && (noPositiveValueExists || noNegativeValueExists))
+        while ((i < values.Count) && (noPositiveValueExists || noNegativeValueExists))
         {
-            if ((double)amounts[i] > 0)
+            if ((double)values[i] > 0)
                 noPositiveValueExists = false;
 
-            if ((double)amounts[i] < 0)
+            if ((double)values[i] < 0)
                 noNegativeValueExists = false;
 
             i++;
@@ -98,7 +98,7 @@ public struct XIRR : IBinarySerialize
         }
         else
         {
-            xirr = XirrCalculator.calculateIRR(amounts, days, guess);
+            xirr = XirrCalculator.calculateIRR(values, days, guess);
 
             // Check if xirr indicates an error (e.g., calculation did not converge)
             if (double.IsNaN(xirr))
