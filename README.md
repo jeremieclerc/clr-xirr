@@ -16,7 +16,7 @@ You need to have :
 
 ## Quick install
 
-Execute the file: `AssemblyXirr.sql`
+Execute the file: `AssemblyXirr.sql` located inside the [Releases tab.](https://github.com/jeremieclerc/clr-xirr/releases)
 This will create the assembly and the function `XIRR` associated.
 
 ## Full installation
