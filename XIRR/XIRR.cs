@@ -1,11 +1,11 @@
-using Microsoft.SqlServer.Server;
 using System;
 using System.Collections;
 using System.Data.SqlTypes;
+using Microsoft.SqlServer.Server;
 
 [Serializable]
-[Microsoft.SqlServer.Server.SqlUserDefinedAggregate(Format.UserDefined)]
-public struct XIRR
+[SqlUserDefinedAggregate(Format.UserDefined, MaxByteSize = -1)]
+public struct XIRR : IBinarySerialize
 {
     public SortedList irrElements;
     public Double guess;
