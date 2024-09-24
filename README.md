@@ -16,8 +16,8 @@ You need to have :
 
 ## Quick install
 
-Execute the file: `XirrClr.sql`
-This will create the assembly and the function `Xirr` associated.
+Execute the file: `AssemblyXirr.sql`
+This will create the assembly and the function `XIRR` associated.
 
 ## Full installation
 

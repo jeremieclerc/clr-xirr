@@ -9,6 +9,7 @@ public struct XIRR
 {
     public SortedList irrElements;
     public Double guess;
+
     public void Init()
     {
         irrElements = new SortedList();   // dates/values list
@@ -70,19 +71,19 @@ public struct XIRR
     {
         // Gets the list of keys and the list of values.
         IList days = this.irrElements.GetKeyList();
-        IList payments = this.irrElements.GetValueList();
+        IList amounts = this.irrElements.GetValueList();
 
         bool noPositiveValueExists = true;
         bool noNegativeValueExists = true;
         int i = 0;
 
         // Loop while we have not found a positive and a negative value in all the list
-        while ((i < payments.Count) && (noPositiveValueExists || noNegativeValueExists))
+        while ((i < amounts.Count) && (noPositiveValueExists || noNegativeValueExists))
         {
-            if ((double)payments[i] > 0)
+            if ((double)amounts[i] > 0)
                 noPositiveValueExists = false;
 
-            if ((double)payments[i] < 0)
+            if ((double)amounts[i] < 0)
                 noNegativeValueExists = false;
 
             i++;
@@ -97,7 +98,7 @@ public struct XIRR
         }
         else
         {
-            xirr = XirrCalculator.calculateIRR(guess, payments, days);
+            xirr = XirrCalculator.calculateIRR(amounts, days, guess);
 
             // Check if xirr indicates an error (e.g., calculation did not converge)
             if (double.IsNaN(xirr))
@@ -159,7 +160,7 @@ public struct XIRR
 
     public static class XirrCalculator
     {
-        public static double calculateIRR(double guess, IList payments, IList days)
+        public static double calculateIRR(IList values, IList days, double guess)
         {
             double rate = guess;
             double tol = 1e-7; // Tolerance level for convergence
@@ -174,7 +175,7 @@ public struct XIRR
                 npv = 0.0;
                 npvDerivative = 0.0;
 
-                for (int i = 0; i < payments.Count; i++)
+                for (int i = 0; i < values.Count; i++)
                 {
                     double t = ((Int32)days[i] - (Int32)days[0]) / 365.0;
                     double ratePlusOne = rate + 1.0;
@@ -193,8 +194,8 @@ public struct XIRR
                         denom = 1e-10;
                     }
 
-                    npv += (double)payments[i] / denom;
-                    npvDerivative -= t * (double)payments[i] / (denom * ratePlusOne);
+                    npv += (double)values[i] / denom;
+                    npvDerivative -= t * (double)values[i] / (denom * ratePlusOne);
                 }
 
                 if (Math.Abs(npv) < tol)
