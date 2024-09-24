@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Data.SqlTypes;
+using System.Data.SqlClient;
 
 namespace XirrTest
 {
@@ -15,7 +16,7 @@ namespace XirrTest
             xirr.Init();
 
             // Define test data: initial investment and subsequent cash inflows
-            var cashFlows = new (DateTime date, double amount)[]
+            var cashFlows = new (DateTime date, double value)[]
             {
                 (new DateTime(2020, 1, 1), -10000.0), // Initial investment
                 (new DateTime(2020, 4, 1), 2500.0),
@@ -31,10 +32,10 @@ namespace XirrTest
             foreach (var cashFlow in cashFlows)
             {
                 SqlDateTime date = new SqlDateTime(cashFlow.date);
-                SqlDouble amount = new SqlDouble(cashFlow.amount);
-                SqlDouble irrApprox = new SqlDouble(initialGuess);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = new SqlDouble(initialGuess);
 
-                xirr.Accumulate(amount, date, irrApprox);
+                xirr.Accumulate(value, date, guess);
             }
 
             SqlDouble result = xirr.Terminate();
@@ -51,7 +52,7 @@ namespace XirrTest
             xirr.Init();
 
             // Define test data: initial cash inflow and subsequent cash outflows
-            var cashFlows = new (DateTime date, double amount)[]
+            var cashFlows = new (DateTime date, double value)[]
             {
                 (new DateTime(2020, 1, 1), 10000.0), // Initial cash inflow
                 (new DateTime(2020, 4, 1), -3000.0),
@@ -66,10 +67,10 @@ namespace XirrTest
             foreach (var cashFlow in cashFlows)
             {
                 SqlDateTime date = new SqlDateTime(cashFlow.date);
-                SqlDouble amount = new SqlDouble(cashFlow.amount);
-                SqlDouble irrApprox = new SqlDouble(initialGuess);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = new SqlDouble(initialGuess);
 
-                xirr.Accumulate(amount, date, irrApprox);
+                xirr.Accumulate(value, date, guess);
             }
 
             SqlDouble result = xirr.Terminate();
@@ -86,7 +87,7 @@ namespace XirrTest
             xirr.Init();
 
             // Define test data including zero amounts
-            var cashFlows = new (DateTime date, double amount)[]
+            var cashFlows = new (DateTime date, double value)[]
             {
                 (new DateTime(2020, 1, 1), -10000.0),
                 (new DateTime(2020, 4, 1), 0.0),     // Zero amount, should be ignored
@@ -101,10 +102,10 @@ namespace XirrTest
             foreach (var cashFlow in cashFlows)
             {
                 SqlDateTime date = new SqlDateTime(cashFlow.date);
-                SqlDouble amount = new SqlDouble(cashFlow.amount);
-                SqlDouble irrApprox = new SqlDouble(initialGuess);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = new SqlDouble(initialGuess);
 
-                xirr.Accumulate(amount, date, irrApprox);
+                xirr.Accumulate(value, date, guess);
             }
 
             SqlDouble result = xirr.Terminate();
@@ -121,7 +122,7 @@ namespace XirrTest
             xirr.Init();
 
             // Define test data with duplicate dates
-            var cashFlows = new (DateTime date, double amount)[]
+            var cashFlows = new (DateTime date, double value)[]
             {
                 (new DateTime(2020, 1, 1), -5000.0),
                 (new DateTime(2020, 1, 1), -5000.0), // Duplicate date, amounts should be summed
@@ -137,10 +138,10 @@ namespace XirrTest
             foreach (var cashFlow in cashFlows)
             {
                 SqlDateTime date = new SqlDateTime(cashFlow.date);
-                SqlDouble amount = new SqlDouble(cashFlow.amount);
-                SqlDouble irrApprox = new SqlDouble(initialGuess);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = new SqlDouble(initialGuess);
 
-                xirr.Accumulate(amount, date, irrApprox);
+                xirr.Accumulate(value, date, guess);
             }
 
             SqlDouble result = xirr.Terminate();
@@ -157,7 +158,7 @@ namespace XirrTest
             xirr.Init();
 
             // Define test data with only negative cash flows
-            var cashFlows = new (DateTime date, double amount)[]
+            var cashFlows = new (DateTime date, double value)[]
             {
                 (new DateTime(2020, 1, 1), -5000.0),
                 (new DateTime(2020, 6, 1), -6000.0)
@@ -169,10 +170,10 @@ namespace XirrTest
             foreach (var cashFlow in cashFlows)
             {
                 SqlDateTime date = new SqlDateTime(cashFlow.date);
-                SqlDouble amount = new SqlDouble(cashFlow.amount);
-                SqlDouble irrApprox = new SqlDouble(initialGuess);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = new SqlDouble(initialGuess);
 
-                xirr.Accumulate(amount, date, irrApprox);
+                xirr.Accumulate(value, date, guess);
             }
 
             SqlDouble result = xirr.Terminate();
@@ -189,7 +190,7 @@ namespace XirrTest
             xirr.Init();
 
             // Define test data with only positive cash flows
-            var cashFlows = new (DateTime date, double amount)[]
+            var cashFlows = new (DateTime date, double value)[]
             {
                 (new DateTime(2020, 1, 1), 5000.0),
                 (new DateTime(2020, 6, 1), 6000.0)
@@ -201,16 +202,51 @@ namespace XirrTest
             foreach (var cashFlow in cashFlows)
             {
                 SqlDateTime date = new SqlDateTime(cashFlow.date);
-                SqlDouble amount = new SqlDouble(cashFlow.amount);
-                SqlDouble irrApprox = new SqlDouble(initialGuess);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = new SqlDouble(initialGuess);
 
-                xirr.Accumulate(amount, date, irrApprox);
+                xirr.Accumulate(value, date, guess);
             }
 
             SqlDouble result = xirr.Terminate();
 
             // Assert
             Assert.IsTrue(result.IsNull, "Expected Null result when no negative cash flows are present.");
+        }
+
+
+        [TestMethod]
+        public void TestXIRRCalculation_WithNullGuess()
+        {
+            // Arrange
+            var xirr = new XIRR();
+            xirr.Init();
+
+            // Define test data with duplicate dates
+            var cashFlows = new (DateTime date, double value)[]
+            {
+                (new DateTime(2020, 1, 1), -10000.0),
+                (new DateTime(2020, 6, 1), 6000.0),
+                (new DateTime(2020, 12, 1), 6000.0)
+            };
+
+            double expectedXIRR = 0.3190;
+            ;
+
+            // Act
+            foreach (var cashFlow in cashFlows)
+            {
+                SqlDateTime date = new SqlDateTime(cashFlow.date);
+                SqlDouble value = new SqlDouble(cashFlow.value);
+                SqlDouble guess = SqlDouble.Null;
+
+                xirr.Accumulate(value, date, guess);
+            }
+
+            SqlDouble result = xirr.Terminate();
+
+            // Assert
+            Assert.AreEqual(expectedXIRR, result.Value, 0.0001, "XIRR calculation did not match expected value with duplicate dates.");
         }
     }
 }

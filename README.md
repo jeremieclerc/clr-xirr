@@ -30,9 +30,9 @@ This will create the assembly and the function `XIRR` associated.
 This function is strongly inspired by Excel's XIRR function.
 It accepts 3 parameters:
 
-- Values
-- Dates
-- Guess
+- Values: float
+- Dates: Datetime
+- Guess: float or NULL (defaults to 0.1)
 
 ## Example
 

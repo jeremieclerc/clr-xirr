@@ -13,7 +13,7 @@ public struct XIRR : IBinarySerialize
     public void Init()
     {
         irrElements = new SortedList();   // dates/values list
-        guess = 12345;                    // Random value to approximate IRR
+        guess = 0.1;                      // Default guess value
     }
 
     public void Accumulate(SqlDouble values, SqlDateTime dates, SqlDouble guess)
@@ -36,9 +36,8 @@ public struct XIRR : IBinarySerialize
             }
         }
 
-        // Initialize the approximate value
-        if (this.guess == 12345)
-            this.guess = (Double)guess.Value;
+        if (!guess.IsNull)
+            this.guess = guess.Value;
     }
 
     public void Merge(XIRR Group)
@@ -112,7 +111,6 @@ public struct XIRR : IBinarySerialize
         }
     }
 
-    // This is a place-holder member field
     // Custom serialization read method
     public void Read(System.IO.BinaryReader r)
     {
@@ -120,7 +118,7 @@ public struct XIRR : IBinarySerialize
         // Read the two parameters given to the function
         guess = r.ReadDouble();
 
-        // Read the list of dates/amounts
+        // Read the list of dates/values
 
         // Create a new sorted list
         this.irrElements = new SortedList();
@@ -142,7 +140,7 @@ public struct XIRR : IBinarySerialize
         // Store the two parameters given to the function
         w.Write(guess);
 
-        // Store the list of dates/amounts
+        // Store the list of dates/values
         // Write the number of values in the list
         w.Write(this.irrElements.Count);
 
