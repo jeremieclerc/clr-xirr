@@ -21,12 +21,10 @@ public struct XIRR : IBinarySerialize
         // Check if the date or the amount are null or if amount=0. In any of these cases, ignore this row
         if ((!dates.IsNull) && (!values.IsNull) && (!values.Equals((SqlDouble)0)))
         {
-            // Get the distance in days between the date and today
             int days = ((DateTime)dates - DateTime.Today).Days;
 
             // Check if that date is already in the list
             if (irrElements.IndexOfKey(days) == -1)
-                // if it is not, add it
                 irrElements.Add(days, (Double)values);
             else
             {
@@ -42,24 +40,18 @@ public struct XIRR : IBinarySerialize
 
     public void Merge(XIRR Group)
     {
-        // Put the merge code here
-        // Merge the IRR approximate
         guess = Group.guess;
 
-        // For each element of the Group SortedList, append or update the local list
         SortedList groupList = Group.irrElements;
         IList groupKeyList = groupList.GetKeyList();
         IList groupValueList = groupList.GetValueList();
 
         for (int i = 0; i < groupList.Count; i++)
         {
-            // Check if that date is already in the local list
             if (irrElements.IndexOfKey(groupKeyList[i]) == -1)
-                // if it is not, add it
                 irrElements.Add(groupKeyList[i], (Double)groupValueList[i]);
             else
             {
-                // if it is, then add the amount
                 Double originalAmount = (Double)(irrElements[groupKeyList[i]]);
                 irrElements[groupKeyList[i]] = originalAmount + (Double)groupValueList[i];
             }
@@ -68,7 +60,6 @@ public struct XIRR : IBinarySerialize
 
     public SqlDouble Terminate()
     {
-        // Gets the list of keys and the list of values.
         IList days = this.irrElements.GetKeyList();
         IList values = this.irrElements.GetValueList();
 
@@ -114,16 +105,10 @@ public struct XIRR : IBinarySerialize
     // Custom serialization read method
     public void Read(System.IO.BinaryReader r)
     {
-
-        // Read the two parameters given to the function
         guess = r.ReadDouble();
 
-        // Read the list of dates/values
-
-        // Create a new sorted list
         this.irrElements = new SortedList();
 
-        // Get the number of values that were serialized
         int j = r.ReadInt32();
 
         // Loop and add each serialized value to the list
@@ -136,15 +121,9 @@ public struct XIRR : IBinarySerialize
     // Custom serialization write method
     public void Write(System.IO.BinaryWriter w)
     {
-
-        // Store the two parameters given to the function
         w.Write(guess);
-
-        // Store the list of dates/values
-        // Write the number of values in the list
         w.Write(this.irrElements.Count);
 
-        // Gets the list of keys and the list of values.
         IList myKeyList = this.irrElements.GetKeyList();
         IList myValueList = this.irrElements.GetValueList();
 
