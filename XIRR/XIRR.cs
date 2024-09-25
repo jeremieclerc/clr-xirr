@@ -18,7 +18,7 @@ public struct XIRR : IBinarySerialize
 
     public void Accumulate(SqlDouble values, SqlDateTime dates, SqlDouble guess)
     {
-        // Check if the date or the amount are null or if amount=0. In any of these cases, ignore this row (ALi added SqlDouble on 20110630)
+        // Check if the date or the amount are null or if amount=0. In any of these cases, ignore this row
         if ((!dates.IsNull) && (!values.IsNull) && (!values.Equals((SqlDouble)0)))
         {
             // Get the distance in days between the date and today

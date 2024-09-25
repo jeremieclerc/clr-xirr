@@ -214,7 +214,6 @@ namespace XirrTest
             Assert.IsTrue(result.IsNull, "Expected Null result when no negative cash flows are present.");
         }
 
-
         [TestMethod]
         public void TestXIRRCalculation_WithNullGuess()
         {
