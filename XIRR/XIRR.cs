@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Data.SqlTypes;
 using Microsoft.SqlServer.Server;
 
@@ -25,12 +26,12 @@ public struct XIRR : IBinarySerialize
 
             // Check if that date is already in the list
             if (irrElements.IndexOfKey(days) == -1)
-                irrElements.Add(days, Math.Truncate(values.Value * 10000) / 10000);
+                irrElements.Add(days, values.Value);
             else
             {
                 // if it is, then add the amount
                 Double originalAmount = (Double)(irrElements[days]);
-                irrElements[days] = originalAmount + (Math.Truncate(values.Value * 10000) / 10000);
+                irrElements[days] = originalAmount + values.Value;
             }
         }
 
@@ -183,8 +184,17 @@ public struct XIRR : IBinarySerialize
 
                 if (npvDerivative == 0.0)
                 {
-                    // Derivative is zero; cannot proceed
-                    return double.NaN;
+                    // Derivative is zero; try bisection method
+                    double minBracket, maxBracket;
+                    if (FindBracket(values, days, out minBracket, out maxBracket))
+                    {
+                        return CalculateIRRUsingBisection(values, days, minBracket, maxBracket, tol, maxIterations);
+                    }
+                    else
+                    {
+                        // Cannot find a suitable bracket
+                        return double.NaN;
+                    }
                 }
 
                 double newRate = rate - npv / npvDerivative;
@@ -209,5 +219,113 @@ public struct XIRR : IBinarySerialize
             return double.NaN;
         }
 
+        private static double ComputeNPV(IList values, IList days, double rate)
+        {
+            double npv = 0.0;
+            double ratePlusOne = rate + 1.0;
+
+            if (ratePlusOne <= 0.0)
+            {
+                // Cannot compute with rate + 1 <= 0
+                return double.NaN;
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                double t = ((Int32)days[i] - (Int32)days[0]) / 365.0;
+                double denom = Math.Pow(ratePlusOne, t);
+
+                if (denom == 0.0)
+                {
+                    // Avoid division by zero
+                    denom = 1e-10;
+                }
+
+                npv += (double)values[i] / denom;
+            }
+
+            return npv;
+        }
+
+        private static bool FindBracket(IList values, IList days, out double minRate, out double maxRate)
+        {
+            minRate = -0.9999999;
+            maxRate = 10.0;
+            double npvMinRate = ComputeNPV(values, days, minRate);
+            double npvMaxRate = ComputeNPV(values, days, maxRate);
+
+            if (double.IsNaN(npvMinRate) || double.IsNaN(npvMaxRate))
+            {
+                return false;
+            }
+
+            if (npvMinRate * npvMaxRate < 0)
+            {
+                return true;
+            }
+
+            // Expand the bracket until a sign change is found or limits are reached
+            for (int i = 0; i < 100; i++)
+            {
+                maxRate += 10.0;
+                npvMaxRate = ComputeNPV(values, days, maxRate);
+
+                if (double.IsNaN(npvMaxRate))
+                {
+                    continue;
+                }
+
+                if (npvMinRate * npvMaxRate < 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static double CalculateIRRUsingBisection(IList values, IList days, double minRate, double maxRate, double tol, int maxIterations)
+        {
+            double npvMinRate = ComputeNPV(values, days, minRate);
+            double npvMaxRate = ComputeNPV(values, days, maxRate);
+
+            if (double.IsNaN(npvMinRate) || double.IsNaN(npvMaxRate))
+            {
+                return double.NaN;
+            }
+
+            if (npvMinRate * npvMaxRate > 0)
+            {
+                // NPV at min and max rates have the same sign; cannot use bisection
+                return double.NaN;
+            }
+
+            double rate = 0.0;
+            for (int iteration = 0; iteration < maxIterations; iteration++)
+            {
+                rate = (minRate + maxRate) / 2.0;
+                double npv = ComputeNPV(values, days, rate);
+
+                if (Math.Abs(npv) < tol)
+                {
+                    // NPV is close enough to zero; convergence achieved
+                    return rate;
+                }
+
+                if (npv * npvMinRate < 0)
+                {
+                    maxRate = rate;
+                    npvMaxRate = npv;
+                }
+                else
+                {
+                    minRate = rate;
+                    npvMinRate = npv;
+                }
+            }
+
+            // Maximum iterations exceeded without convergence
+            return rate;
+        }
     }
 }
