@@ -25,12 +25,12 @@ public struct XIRR : IBinarySerialize
 
             // Check if that date is already in the list
             if (irrElements.IndexOfKey(days) == -1)
-                irrElements.Add(days, (Double)values);
+                irrElements.Add(days, Math.Truncate(values.Value * 10000) / 10000);
             else
             {
                 // if it is, then add the amount
                 Double originalAmount = (Double)(irrElements[days]);
-                irrElements[days] = originalAmount + (Double)values;
+                irrElements[days] = originalAmount + (Math.Truncate(values.Value * 10000) / 10000);
             }
         }
 
@@ -140,7 +140,7 @@ public struct XIRR : IBinarySerialize
         public static double calculateIRR(IList values, IList days, double guess)
         {
             double rate = guess;
-            double tol = 1e-7; // Tolerance level for convergence
+            double tol = 0.000001; // Tolerance level for convergence
             int maxIterations = 100; // Maximum number of iterations allowed
             double npv = 0.0;
             double npvDerivative = 0.0;
